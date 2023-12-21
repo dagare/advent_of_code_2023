@@ -13,7 +13,7 @@ class MasterConverter:
     def __init__(self, range_converters):
         self.range_converters = range_converters
 
-    def convert_single_value(self, source, destination, input):
+    def convert_single_value(self, source: str, destination: str, input: int) -> int:
         print(f'source:{source} - destination:{destination} : input:{input}')
     
         for range_converter in self.range_converters:
@@ -28,7 +28,7 @@ class MasterConverter:
         print(f'source:{source} - destination:{destination} : input:{input}. MUST NOT COME HERE')
         return None
 
-    def convert_range(self, source, destination, range):
+    def convert_range(self, source: str, destination: str, range: Range) -> [Range]:
         
         for range_converter in self.range_converters:
             if range_converter.source == source:
@@ -39,8 +39,8 @@ class MasterConverter:
                 else:
                     return self.convert_range_vector(range_converter.destination, destination, temp_range_vector)
     
-        print(f'source:{source} - destination:{destination} : range:{input}. MUST NOT COME HERE')
-        return None
+        print(f'source:{source} - destination:{destination} : range:{input}.')
+        raise Exception(f'convert_range FAILED. source:{source} - destination:{destination} : range:{input}.')
     
 
     def convert_range_vector(self, source, destination, range_vector):
@@ -53,12 +53,15 @@ class MasterConverter:
         return out
 
 class RangeConverter:
-    def __init__(self, source_start, destination_start, range_length):
+    def __init__(self, source_start: int, destination_start: int, range_length: int):
         self.source_start = source_start
         self.destination_start = destination_start
         self.range_length = range_length
 
-    def is_inside_range_single_value(self, input):
+    def print(self):
+        return f'{self.destination_start} {self.source_start} {self.range_length}'
+
+    def is_inside_range_single_value(self, input: int) -> bool:
         if input < self.source_start:
             return False
         if input > self.source_start + self.range_length:
@@ -66,7 +69,7 @@ class RangeConverter:
        
         return True
     
-    def is_inside_range_range(self, input_range):
+    def is_inside_range_range(self, input_range: Range) -> bool:
         if input_range.start + input_range.length < self.source_start:
             return False
         if input_range.start > self.source_start + self.range_length:
@@ -74,15 +77,15 @@ class RangeConverter:
        
         return True
     
-    def convert_single_value(self, input):
+    def convert_single_value(self, input: int) -> int:
         if self.is_inside_range_single_value(input):
             diff = input - self.source_start
             return self.destination_start + diff
         
         return input
 
-    def convert_range(self, input_range):
-        print(f'input_range. start:{input_range.start}. length:{input_range.length}')
+    def convert_range(self, input_range: Range) -> [Range]:
+        print(f'input_range. start:{input_range.start}. length:{input_range.length}. self.source_start:{self.source_start} destination_start:{self.destination_start} self.range_lenght:{self.range_length}')
 
         input_starts_before_convertion = input_range.start < self.source_start
         input_ends_after_convertion = input_range.start + input_range.length > self.source_start + self.range_length
@@ -93,7 +96,7 @@ class RangeConverter:
             case_id = 1
         elif input_starts_before_convertion and not input_ends_after_convertion:
             case_id = 2
-        elif not input_starts_before_convertion and not input_ends_after_convertion:
+        elif not input_starts_before_convertion and input_ends_after_convertion:
             case_id = 3
         else:
             case_id = 4
@@ -130,7 +133,7 @@ class RangeConverter:
         
         elif case_id == 3:
             new_start = self.convert_single_value(input_range.start)
-            new_range = self.range_length - input_range.start
+            new_range = self.range_length - (new_start - self.source_start)
 
             print(f'case_id:{case_id}, new_start:{new_start} new_range:{new_range}')
             output_ranges.append(Range(new_start, new_range))
@@ -159,15 +162,15 @@ class RangeConverter:
   
   
 class ConverterObject:
-    def __init__(self, source, destination):
+    def __init__(self, source: str, destination: str):
         self.source = source
         self.destination = destination
         self.range_converters = []
 
-    def add_range_converter(self, range_converter):
+    def add_range_converter(self, range_converter: RangeConverter):
         self.range_converters.append(range_converter)
 
-    def convert_single_value(self, input):
+    def convert_single_value(self, input: int) -> int:
         print(f'input:{input}')
 
         for range_converter in self.range_converters:
@@ -176,14 +179,19 @@ class ConverterObject:
         
         return input
     
-    def convert_range_vector(self, input_ranges):
+    def convert_range_vector(self, input_ranges: [Range]) -> [Range]:
         output_ranges = []        
 
         for input_range in input_ranges:
+            was_found = False
             for range_converter in self.range_converters:
                 if range_converter.is_inside_range_range(input_range):
-                    output_ranges += range_converter.convert_range(input_range)
-        
+                    output_ranges.extend(range_converter.convert_range(input_range))
+                    was_found = True
+
+            if not was_found:
+                output_ranges.extend([input_range])
+
         return output_ranges
             
 
@@ -263,7 +271,7 @@ print(f'NumberOfSeeds:{number_of_seeds}')
 
 
 #part 2
-list_of_locations_ranges = master_converter.convert_range_vector("seed", "location", list_of_seed_ranges)
+list_of_locations_ranges = master_converter.convert_range_vector("seed", "soil", list_of_seed_ranges)
 
 smallest = 999999999999999999
 smallest_not_zero = 999999999999999999
