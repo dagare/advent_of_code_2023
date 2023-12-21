@@ -5,55 +5,60 @@ from time import sleep
 from tqdm import tqdm
 
 class Range:
-    def __init__(self, start, range):
+    def __init__(self, start, length):
         self.start = start
-        self.range = range
+        self.length = length
 
-class Converter:
-    def __init__(self, converters):
-        self.converters = converters
+class MasterConverter:
+    def __init__(self, range_converters):
+        self.range_converters = range_converters
 
-  
-
-    def convert(self, source, destination, input):
+    def convert_single_value(self, source, destination, input):
         print(f'source:{source} - destination:{destination} : input:{input}')
     
-        for converter in self.converters:
-            if converter.source == source:
-                temp_output = converter.convert_source_to_destination(input)
+        for range_converter in self.range_converters:
+            if range_converter.source == source:
+                temp_output = range_converter.convert_single_value(input)
                 
-                if converter.destination == destination:
+                if range_converter.destination == destination:
                     return temp_output
                 else:
-                    return self.convert(converter.destination, destination, temp_output)
+                    return [self.convert_single_value(range_converter.destination, destination, temp_output)]
     
         print(f'source:{source} - destination:{destination} : input:{input}. MUST NOT COME HERE')
         return None
 
-    def convert(self, source, destination, range):
-        out = []
+    def convert_range(self, source, destination, range):
         
-        for range in range_vector:
-            out.append(self.convert(source, destination, range))
-            
-        return out
+        for range_converter in self.range_converters:
+            if range_converter.source == source:
+                temp_range_vector = range_converter.convert_range_vector([range])
+                
+                if range_converter.destination == destination:
+                    return temp_range_vector
+                else:
+                    return self.convert_range_vector(range_converter.destination, destination, temp_range_vector)
+    
+        print(f'source:{source} - destination:{destination} : range:{input}. MUST NOT COME HERE')
+        return None
     
 
-    def convert(self, source, destination, range_vector):
+    def convert_range_vector(self, source, destination, range_vector):
         out = []
         
         for range in range_vector:
-            out.append(self.convert(source, destination, range))
+            #out += self.convert(source, destination, range)
+            out += self.convert_range(source, destination, range)
 
         return out
 
-class ConverterRange:
+class RangeConverter:
     def __init__(self, source_start, destination_start, range_length):
         self.source_start = source_start
         self.destination_start = destination_start
         self.range_length = range_length
 
-    def is_inside_range(self, input):
+    def is_inside_range_single_value(self, input):
         if input < self.source_start:
             return False
         if input > self.source_start + self.range_length:
@@ -61,8 +66,8 @@ class ConverterRange:
        
         return True
     
-    def is_inside_range(self, input_range):
-        if input_range.start + input_range.range < self.source_start:
+    def is_inside_range_range(self, input_range):
+        if input_range.start + input_range.length < self.source_start:
             return False
         if input_range.start > self.source_start + self.range_length:
             return False
@@ -70,17 +75,17 @@ class ConverterRange:
         return True
     
     def convert_single_value(self, input):
-        if self.is_inside_range(input):
+        if self.is_inside_range_single_value(input):
             diff = input - self.source_start
             return self.destination_start + diff
         
         return input
 
-    def convert_source_to_destination(self, input_range):
-        print(f'input:{input}')
+    def convert_range(self, input_range):
+        print(f'input_range. start:{input_range.start}. length:{input_range.length}')
 
         input_starts_before_convertion = input_range.start < self.source_start
-        input_ends_after_convertion = input_range.start + input_range.range > self.source_start + self.range_length
+        input_ends_after_convertion = input_range.start + input_range.length > self.source_start + self.range_length
 
         case_id = 0
 
@@ -116,7 +121,7 @@ class ConverterRange:
 
         elif case_id == 2:
             new_start = self.convert_single_value(self.source_start)
-            new_range = input_range.range - input_range_consumed
+            new_range = input_range.length - input_range_consumed
 
             print(f'case_id:{case_id}, new_start:{new_start} new_range:{new_range}')
             output_ranges.append(Range(new_start, new_range))
@@ -144,38 +149,11 @@ class ConverterRange:
         # Input range after convertor. just create range
         if case_id == 1 or case_id == 3:
             new_start = self.source_start + self.range_length
-            new_range = input_range.range - input_range_consumed
+            new_range = input_range.length - input_range_consumed
 
             print(f'case_id:{case_id}, new_start:{new_start} new_range:{new_range}')
             output_ranges.append(Range(new_start, new_range))
             input_range_consumed += new_range
-
-
-        # if (input_range.start <= self.source_start):
-        #     # First part with no convertion
-        #     start_diff = self.source_start - input_range.start
-        #     first_range = min(input_range.range, self.range_length - start_diff)
-
-        #     output_ranges.append(Range(input_range.start, first_range))
-
-        #     if input_range.start + input_range.range <= self.source_start + self.range_length:
-        #         return output_ranges
-            
-        #     # Second is converted
-        #     second_range = min(input_range.range, self.range_length)
-
-        #     output_ranges.append(Range(input_range.start, second_range))
-
-        #     if input_range.range > self.range_length:
-        #         # We must add the last range
-        #         third_start = input_range.start + first_range + second_range
-        #         output_ranges.append(Range(third_start, input_range.range-second_range-first_range))
-
-        # else: #(input_range.start > self.source_start):
-
-
-    
-        #return self.destination_start + (input - self.source_start)
     
         return output_ranges
   
@@ -184,29 +162,29 @@ class ConverterObject:
     def __init__(self, source, destination):
         self.source = source
         self.destination = destination
-        self.converter_ranges = []
+        self.range_converters = []
 
-    def add_range(self, range):
-        self.converter_ranges.append(range)
+    def add_range_converter(self, range_converter):
+        self.range_converters.append(range_converter)
 
-    def convert_source_to_destination(self, input):
+    def convert_single_value(self, input):
         print(f'input:{input}')
 
-        for range in self.converter_ranges:
-            if range.is_inside_range(input):
-                return range.convert_source_to_destination(input)
+        for range_converter in self.range_converters:
+            if range_converter.is_inside_range_single_value(input):
+                return range_converter.convert_single_value(input)
         
         return input
     
-    def convert_source_to_destination(self, input_ranges):
+    def convert_range_vector(self, input_ranges):
         output_ranges = []        
 
         for input_range in input_ranges:
-            for range in self.converter_ranges:
-                if range.is_inside_range(input):
-                    return range.convert_source_to_destination(input)
+            for range_converter in self.range_converters:
+                if range_converter.is_inside_range_range(input_range):
+                    output_ranges += range_converter.convert_range(input_range)
         
-        return input
+        return output_ranges
             
 
 def parse_seeds_range_input(line):
@@ -228,10 +206,9 @@ list_of_seeds = []
 list_of_seed_ranges = []
 list_of_converters = []
 
-file = open("day_5_input.txt", "r")
+file = open("day_5_input_simple.txt", "r")
 is_parsing_converter = False
 
-parse_seeds_as_ranges = True
 
 
 for line in file:
@@ -240,12 +217,12 @@ for line in file:
         continue
 
     elif "seeds:" in line:
-        if not parse_seeds_as_ranges:
-            split_result = line.split(':')
-            list_of_seeds = split_result[1].split(' ')
-            list_of_seeds = [int(x) for x in list_of_seeds if x]
-        else:
-            list_of_seed_ranges = parse_seeds_range_input(line)
+        # for part one
+        split_result = line.split(':')
+        list_of_seeds = split_result[1].split(' ')
+        list_of_seeds = [int(x) for x in list_of_seeds if x]
+        # for part 2
+        list_of_seed_ranges = parse_seeds_range_input(line)
 
     elif "-to-" in line and " map:" in line:
         split_result = line.split("-to-")
@@ -265,24 +242,39 @@ for line in file:
         destination_start = list_of_ints[0]
         range_length = list_of_ints[2]
 
-        list_of_converters[-1].add_range(ConverterRange(source_start, destination_start, range_length))
+        list_of_converters[-1].add_range_converter(RangeConverter(source_start, destination_start, range_length))
        
-converter = Converter(list_of_converters)
+master_converter = MasterConverter(list_of_converters)
 
 number_of_seeds = 0
 for seed_range in list_of_seed_ranges:
-    number_of_seeds += seed_range.range
+    number_of_seeds += seed_range.length
 
 print(f'NumberOfSeeds:{number_of_seeds}')
 
-list_of_locations = []
-for i in tqdm(range(len(list_of_seeds))):
-    location = converter.convert("seed", "location", list_of_seeds[i])
-    list_of_locations.append(location)
+# list_of_locations = []
+# for i in tqdm(range(len(list_of_seeds))):
+#     location = converter.convert("seed", "location", list_of_seeds[i])
+#     list_of_locations.append(location)
 
 
-print(f"locations are {list_of_locations}")
-print(f"lowest is locations are {min(list_of_locations)}")
+# print(f"locations are {list_of_locations}")
+# print(f"lowest is locations are {min(list_of_locations)}")
 
 
 #part 2
+list_of_locations_ranges = master_converter.convert_range_vector("seed", "location", list_of_seed_ranges)
+
+smallest = 999999999999999999
+smallest_not_zero = 999999999999999999
+for location_range in list_of_locations_ranges:
+    print(f'location start:{location_range.start} \t length:{location_range.length}')
+
+    if location_range.start <= smallest:
+        smallest = location_range.start
+    if location_range.start <= smallest_not_zero and location_range.start > 0:
+        smallest_not_zero = location_range.start
+
+print(f"there are {len(list_of_locations_ranges)} location ranges")
+print(f"lowest is locations is: {smallest}")
+print(f"lowest (non zero) is locations is: {smallest_not_zero}")
