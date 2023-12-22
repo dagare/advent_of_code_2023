@@ -93,7 +93,7 @@ class MasterConverter:
                     return self.convert_range_vector(converter_map.destination, destination, temp_range_vector)
     
         print(f'source:{source} - destination:{destination} : range:{input}.')
-        raise Exception(f'convert_range FAILED. source:{source} - destination:{destination} : range:{input}.')
+        raise Exception(f'convert_range_converter FAILED. source:{source} - destination:{destination} : range:{input}.')
 
     def convert_range_converter_vector(self, source: str, destination: str, range_converter_vector: [RangeConverter]) -> [RangeConverter]:
         out = []

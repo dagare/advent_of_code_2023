@@ -53,7 +53,7 @@ master_converter = MasterConverter(config.get_list_of_converter_maps())
 
 
 master_converter.print_to_file("/home/dat/code/advent_of_code_2023/day_5/debug.txt", "seed", "fertilizer")
-#master_converter.print_to_file("day_5/debug_file.txt", "seed", "fertilizer")
+#                                    master_converter.print_to_file("day_5/debug_file.txt", "seed", "fertilizer")
 
 #part 2
 list_of_locations_ranges = master_converter.convert_range_vector("seed", "soil", config.get_list_of_seed_ranges())

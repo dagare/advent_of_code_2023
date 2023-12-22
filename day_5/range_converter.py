@@ -108,3 +108,7 @@ class RangeConverter:
     
         return output_ranges
   
+
+
+def f -> bool:
+        return range_converter_to.is_inside_range_range(Range(range_converter_to.destination_start, range_converter_to.range_length))
